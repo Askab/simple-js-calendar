@@ -1,0 +1,25 @@
+<html>
+<head>
+    <title>Calendar</title>
+
+    <link rel="stylesheet" href="calendar.css">
+</head>
+
+<body>
+    <div id="calendar">
+        <div class="header">
+            <div class="prev-month" onclick="changeMonth(-1)">&#8592;</div>
+            <div id="month-year"></div>
+            <div class="next-month" onclick="changeMonth(1)">&#8594;</div>
+        </div>
+        <div class="content"></div>
+    </div>
+
+    <script src="calendar.js"></script>
+    <script>
+        const calendar = new Calendar();
+        calendar.monthlyView(8);
+    </script>
+
+</body>
+</html>
