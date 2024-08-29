@@ -8,17 +8,18 @@
 <body>
     <div id="calendar">
         <div class="header">
-            <div class="prev-month" onclick="changeMonth(-1)">&#8592;</div>
+            <div class="prev-month" >&#8592;</div>
             <div id="month-year"></div>
-            <div class="next-month" onclick="changeMonth(1)">&#8594;</div>
+            <div class="next-month" >&#8594;</div>
         </div>
-        <div class="content"></div>
+        <div class="weekdays"></div>
+        <div class="calendar-content"></div>
     </div>
 
     <script src="calendar.js"></script>
     <script>
         const calendar = new Calendar();
-        calendar.monthlyView(8);
+        calendar.render();
     </script>
 
 </body>

@@ -1,0 +1,47 @@
+.header {
+    display: flex;
+    width: 100%;
+    flex-direction: row;
+    justify-content: space-between;
+}
+
+.calendar-content {
+    background-color: aliceblue;
+    border: 1px solid;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    height: 80%;
+}
+
+.week, .weekdays {
+    display: flex;
+    /*background-color: antiquewhite;*/
+    height: 20%;
+    width: 100%;
+}
+
+.weekdays {
+    height: 5%;
+    display: flex;
+    align-items: center;
+}
+
+.day, .weekday {
+    display: flex;
+    border: 1px solid;
+    width: 14.3%;
+}
+
+.day {
+    font-weight: bold;
+}
+
+.weekday {
+    justify-content: center;
+}
+
+.buffer {
+    color: black;
+    background-color: #cfcfcf;
+}
