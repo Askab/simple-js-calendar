@@ -45,3 +45,12 @@
     color: black;
     background-color: #cfcfcf;
 }
+
+.long-event {
+    height: 20px;
+    background-color: blue;
+    color: white;
+    position: absolute;
+    width: 14%;
+    /*width: 530px; Automatikusan kell számolódna*/
+}

@@ -81,7 +81,7 @@ class Calendar {
         let iPrev = (prevMonthDayCount - (dayOfTheWeek - 2));
 
         while(iPrev <= prevMonthDayCount){
-            viewData[0].push(this.makeDayObject(iPrev, "buffer"));
+            viewData[0].push(this.makeDayObject( iPrev, `${prevMonthsYear}-${prevMonth}-${iPrev}`,"buffer"));
             iPrev++;
         }
 
@@ -94,7 +94,7 @@ class Calendar {
 
         for(let iCurr = 1; iCurr <= dateToShowDayCount.getDate(); iCurr++) {
 
-            viewData[currentWeekIndex].push(this.makeDayObject(iCurr, "normal"));
+            viewData[currentWeekIndex].push(this.makeDayObject(iCurr, `${prevMonthsYear}-${currentMonthNumber}-${iCurr}`, "normal"));
             dayIndex++;
 
             // Prepare the next week, if needed
@@ -112,7 +112,7 @@ class Calendar {
         let bufferDays = 1;
 
         while(lastWeekCount < 7){
-            viewData[viewData.length - 1].push(this.makeDayObject(bufferDays, "buffer"));
+            viewData[viewData.length - 1].push(this.makeDayObject(bufferDays, `${prevMonthsYear}-${currentMonthNumber + 1}-${bufferDays}`, "buffer"));
             bufferDays++;
             lastWeekCount++;
         }
@@ -146,6 +146,82 @@ class Calendar {
 
         /** Content */
         this.renderContent();
+
+        /** Events */
+        this.renderEvents();
+    }
+
+    renderEvents(){
+        /**
+         * Test
+         */
+        let startDate = new Date("2024-8-02");
+        let endDate = new Date("2024-8-24");
+
+        let currentDate = new Date("2024-8-02");
+
+        endDate.setDate(endDate.getDate() + 1);
+
+        let currWeekDay = 0; //startDate.getDay();
+        do {
+
+            // Event's first day
+            if(this.formatDate(currentDate) == this.formatDate(startDate)){
+                let dayDiv = document.querySelector('.day[date="' + this.formatDate(startDate) + '"]');
+                
+                let eventStartDiv = document.createElement("div");
+                eventStartDiv.classList.add("long-event");
+                eventStartDiv.textContent = "Long Event";
+
+                dayDiv.appendChild(eventStartDiv);
+            }
+
+            // Monday
+            if(currentDate.getDay() == 1){
+                let dayDiv = document.querySelector('.day[date="' + this.formatDate(currentDate) + '"]');
+                
+                let eventStartDiv = document.createElement("div");
+                eventStartDiv.classList.add("long-event");
+                //eventStartDiv.classList.add("long-event");
+                eventStartDiv.textContent = "Long Event";
+
+                dayDiv.appendChild(eventStartDiv);
+            }
+
+            console.log('CURR WEEKDAY NUM:' + currentDate.getDay());
+
+            if(currentDate.getDay() == 0 && currWeekDay < 7){
+
+                let insertedEventElement = document.querySelector('.long-event');
+
+                if(insertedEventElement){
+                    console.log("Width: " + insertedEventElement.offsetWidth);
+                    console.log('FUCK ME -> ' + currWeekDay);
+                    insertedEventElement.style.width = (14 * (1 + currWeekDay)) + '%'; //insertedEventElement.offsetWidth + insertedEventElement.offsetWidth;
+                }
+
+                currWeekDay = 1;
+                
+                //break;
+            } else if(currentDate.getDay() == 0 && currWeekDay == 7) {
+
+            }
+
+            currWeekDay++;
+
+            
+
+
+
+            console.log(currentDate);
+
+            currentDate.setDate(currentDate.getDate() + 1);
+
+        } while((endDate - currentDate) != 0);
+
+        //console.log(difference);
+
+
     }
 
     renderContent() {
@@ -166,7 +242,7 @@ class Calendar {
                 week.forEach(day => {
                     let dayCell = document.createElement("div");
                     dayCell.classList.add("day");
-                    dayCell.setAttribute("day", day.day);
+                    dayCell.setAttribute("date", day.date);
                     
                     if(day.type == "buffer"){
                         dayCell.classList.add("buffer");
@@ -184,12 +260,27 @@ class Calendar {
         }
     }
 
-    makeDayObject(day, type){
+    makeDayObject(day, date, type){
 
         return {
             day: day,
+            date: date,
             type: type,
             events: []
         };
+    }
+
+    formatDate(date) {
+        var d = new Date(date),
+            month = '' + (d.getMonth() + 1),
+            day = '' + d.getDate(),
+            year = d.getFullYear();
+    
+        /*if (month.length < 2) 
+            month = '0' + month;
+        if (day.length < 2) 
+            day = '0' + day;*/
+    
+        return [year, month, day].join('-');
     }
 }
