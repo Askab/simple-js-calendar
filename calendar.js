@@ -12,6 +12,42 @@ class Calendar {
         this.events = [];
 
         this.assignEvents();
+
+        /**
+         * https://stackoverflow.com/a/9047794
+         * Returns the week number for this date.  dowOffset is the day of week the week
+         * "starts" on for your locale - it can be from 0 to 6. If dowOffset is 1 (Monday),
+         * the week returned is the ISO 8601 week number.
+         * @param int dowOffset
+         * @return int
+         */
+        Date.prototype.getWeek = function (dowOffset) {
+            /*getWeek() was developed by Nick Baicoianu at MeanFreePath: http://www.meanfreepath.com */
+            
+                dowOffset = typeof(dowOffset) == 'number' ? dowOffset : 0; //default dowOffset to zero
+                var newYear = new Date(this.getFullYear(),0,1);
+                var day = newYear.getDay() - dowOffset; //the day of week the year begins on
+                day = (day >= 0 ? day : day + 7);
+                var daynum = Math.floor((this.getTime() - newYear.getTime() - 
+                (this.getTimezoneOffset()-newYear.getTimezoneOffset())*60000)/86400000) + 1;
+                var weeknum;
+                //if the year starts before the middle of a week
+                if(day < 4) {
+                    weeknum = Math.floor((daynum+day-1)/7) + 1;
+                    if(weeknum > 52) {
+                        nYear = new Date(this.getFullYear() + 1,0,1);
+                        nday = nYear.getDay() - dowOffset;
+                        nday = nday >= 0 ? nday : nday + 7;
+                        /*if the next year starts before the middle of
+                        the week, it is week #1 of that year*/
+                        weeknum = nday < 4 ? 1 : 53;
+                    }
+                }
+                else {
+                    weeknum = Math.floor((daynum+day-1)/7);
+                }
+                return weeknum;
+            };
     }
 
     assignEvents(){
@@ -155,73 +191,121 @@ class Calendar {
         /**
          * Test
          */
-        let startDate = new Date("2024-8-02");
-        let endDate = new Date("2024-8-24");
+        let startDateString = '2024-08-27';
+        let endDateString = '2024-09-10';
 
-        let currentDate = new Date("2024-8-02");
+        let startDate = new Date(startDateString);
+        let endDate = new Date(endDateString);
+        let currentDate = new Date(startDateString);
 
-        endDate.setDate(endDate.getDate() + 1);
+        console.log("START: " + startDate.toLocaleDateString());
+        console.log("END: " + endDate.toLocaleDateString());
 
-        let currWeekDay = 0; //startDate.getDay();
-        do {
+        let currWeekDay = currentDate.getDay();
+        let isStartWeek = true;
 
-            // Event's first day
-            if(this.formatDate(currentDate) == this.formatDate(startDate)){
-                let dayDiv = document.querySelector('.day[date="' + this.formatDate(startDate) + '"]');
-                
-                let eventStartDiv = document.createElement("div");
-                eventStartDiv.classList.add("long-event");
-                eventStartDiv.textContent = "Long Event";
+        while(currentDate <= endDate){
 
-                dayDiv.appendChild(eventStartDiv);
-            }
-
-            // Monday
-            if(currentDate.getDay() == 1){
+            // Következő hónapra átlógó esemény
+            if((currentDate.getMonth() + 1) > this.viewedMonth){
                 let dayDiv = document.querySelector('.day[date="' + this.formatDate(currentDate) + '"]');
-                
-                let eventStartDiv = document.createElement("div");
-                eventStartDiv.classList.add("long-event");
-                //eventStartDiv.classList.add("long-event");
-                eventStartDiv.textContent = "Long Event";
 
-                dayDiv.appendChild(eventStartDiv);
-            }
-
-            console.log('CURR WEEKDAY NUM:' + currentDate.getDay());
-
-            if(currentDate.getDay() == 0 && currWeekDay < 7){
-
-                let insertedEventElement = document.querySelector('.long-event');
-
-                if(insertedEventElement){
-                    console.log("Width: " + insertedEventElement.offsetWidth);
-                    console.log('FUCK ME -> ' + currWeekDay);
-                    insertedEventElement.style.width = (14 * (1 + currWeekDay)) + '%'; //insertedEventElement.offsetWidth + insertedEventElement.offsetWidth;
+                if(dayDiv == null){
+                    console.log("Another month, it's day is not present: " + currentDate);
+                    break;
                 }
 
-                currWeekDay = 1;
-                
-                //break;
-            } else if(currentDate.getDay() == 0 && currWeekDay == 7) {
+            } 
+            // Előző hónapból átlóg a jelenlegi hónapba
+            else if((currentDate.getMonth() + 1) < this.viewedMonth){
 
+                let dayDiv = document.querySelector('.day[date="' + this.formatDate(currentDate) + '"]');
+
+                if(dayDiv == null){
+                    console.log("Another month, it's day is not YET present: " + currentDate);
+                    currentDate = this.incrementDate(currentDate, 1);
+                    currWeekDay = 1;
+                    continue;
+                }
             }
 
-            currWeekDay++;
+            // If sunday
+            if(currWeekDay == 0){
+                currWeekDay = 7;
+            }
 
+            var eventStartDiv;
             
+            /**
+             * (currWeekDay == 1 && (currentDate.getMonth() + 1) < this.viewedMonth)
+             * Ha az előző hónapban kezdődik
+             */
+            if(currWeekDay == 1 || currentDate.getTime() === startDate.getTime() || (currWeekDay == 1 && (currentDate.getMonth() + 1) < this.viewedMonth)){
+                let dayDiv = document.querySelector('.day[date="' + this.formatDate(currentDate) + '"]');
+                if(dayDiv !== null){
 
+                    eventStartDiv = document.createElement("div");
+                    eventStartDiv.classList.add("long-event");
+                    eventStartDiv.textContent = "Long Event";
 
+                    dayDiv.appendChild(eventStartDiv);
+                    
+                } else {
+                    console.log("Undefined Day div: " + this.formatDate(currentDate));
+                }
 
-            console.log(currentDate);
+                if(currentDate.getTime() !== startDate.getTime()){
+                    isStartWeek = false;
+                }
+            }
 
-            currentDate.setDate(currentDate.getDate() + 1);
+            if(isStartWeek == true){
 
-        } while((endDate - currentDate) != 0);
+                // HA a kezdő dátum, és a vég dátum ugyan azon a héten van
+                let startEndDiffInDays = ((endDate - startDate) / 1000 / 60 / 60 / 24) + 1;
+                let startDayOfWeek = startDate.getDay();
 
-        //console.log(difference);
+                /**
+                 * @todo
+                 */
+                if(startEndDiffInDays <= 7){
+                    console.log("7 < DIff: " + startEndDiffInDays);
+                    eventStartDiv.style.width = (14 * startEndDiffInDays) + '%';
+                } else {
+                    
+                    startDayOfWeek = (startDayOfWeek == 0 ? 7 : startDayOfWeek);
+                    // A 8 azért kell, mert 7-ből vonna ki,ami vasárnap esetében 0 lenne
+                    eventStartDiv.style.width = (14 * (8 - startDayOfWeek)) + '%';
+                }
+                
+                
+            } else {
+                eventStartDiv.style.width = (14 * currWeekDay) + '%';
+            }
 
+            if(currWeekDay == 7){
+                currWeekDay = 1;
+                //eventStartDiv.style.width = (14 * (1 + currWeekDay)) + '%';
+            } else {
+                currWeekDay++;
+            }
 
+            //currentDate.setDate(currentDate.getDate() + 1);
+
+            //currentDate.setMilliseconds((currentDate.getMilliseconds() + (1000*60*60*24)));
+
+            currentDate = this.incrementDate(currentDate, 1);
+        }
+
+        console.log('Diff: ' + ((endDate - startDate) / 1000 / 60 / 60 / 24));
+
+    }
+
+    // https://stackoverflow.com/a/45408480
+    incrementDate(dateInput,increment) {
+        var dateFormatTotime = new Date(dateInput);
+        var increasedDate = new Date(dateFormatTotime.getTime() +(increment *86400000));
+        return increasedDate;
     }
 
     renderContent() {
