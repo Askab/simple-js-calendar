@@ -78,7 +78,10 @@ class Calendar {
             this.viewedMonth = 1;
             this.viewedYear++;
         }
+        this.renderedEventsMargin = 1;
         this.render();
+        
+        //this.renderEvents();
     }
 
     stepBackward(){
@@ -87,7 +90,9 @@ class Calendar {
             this.viewedMonth = 12;
             this.viewedYear--;
         }
+        this.renderedEventsMargin = 1;
         this.render();
+        //this.renderEvents();
     }
 
     monthlyView(){
@@ -188,11 +193,40 @@ class Calendar {
     }
 
     renderEvents(){
+        let testEvents = [
+            {
+                title: "Event 1",
+                startDate: '2024-10-06',
+                endDate: '2024-11-05',
+                color: "red"
+            },
+            {
+                title: "Event 2",
+                startDate: '2024-10-07',
+                endDate: '2024-10-10',
+                color: "blue"
+            },
+            {
+                title: "Event 3",
+                startDate: '2024-10-06',
+                endDate: '2024-10-15',
+                color: "green"
+            },
+        ];
+
+        testEvents.forEach((event) => {
+            this.renderOneEvent(event);
+        });
+    }
+
+    renderedEventsMargin = 1;
+
+    renderOneEvent(eventObject){
         /**
          * Test
          */
-        let startDateString = '2024-08-27';
-        let endDateString = '2024-09-10';
+        let startDateString = eventObject.startDate;
+        let endDateString = eventObject.endDate;
 
         let startDate = new Date(startDateString);
         let endDate = new Date(endDateString);
@@ -246,9 +280,16 @@ class Calendar {
 
                     eventStartDiv = document.createElement("div");
                     eventStartDiv.classList.add("long-event");
-                    eventStartDiv.textContent = "Long Event";
+                    eventStartDiv.textContent = eventObject.title;
+                    eventStartDiv.style.backgroundColor = eventObject.color;
 
                     dayDiv.appendChild(eventStartDiv);
+
+                    let dayDivTopDistance = (dayDiv.getBoundingClientRect().top + 10);
+
+                    //this.renderedEventsMargin = dayDivTopDistance;
+
+                    eventStartDiv.style.top = (dayDivTopDistance + this.renderedEventsMargin + 10) + 'px';
                     
                 } else {
                     console.log("Undefined Day div: " + this.formatDate(currentDate));
@@ -264,16 +305,13 @@ class Calendar {
                 // HA a kezdő dátum, és a vég dátum ugyan azon a héten van
                 let startEndDiffInDays = ((endDate - startDate) / 1000 / 60 / 60 / 24) + 1;
                 let startDayOfWeek = startDate.getDay();
+                startDayOfWeek = (startDayOfWeek == 0 ? 7 : startDayOfWeek);
 
-                /**
-                 * @todo
-                 */
-                if(startEndDiffInDays <= 7){
+                if(startEndDiffInDays <= 7 && startDate.getWeek() == endDate.getWeek()){
+
                     console.log("7 < DIff: " + startEndDiffInDays);
                     eventStartDiv.style.width = (14 * startEndDiffInDays) + '%';
                 } else {
-                    
-                    startDayOfWeek = (startDayOfWeek == 0 ? 7 : startDayOfWeek);
                     // A 8 azért kell, mert 7-ből vonna ki,ami vasárnap esetében 0 lenne
                     eventStartDiv.style.width = (14 * (8 - startDayOfWeek)) + '%';
                 }
@@ -290,15 +328,12 @@ class Calendar {
                 currWeekDay++;
             }
 
-            //currentDate.setDate(currentDate.getDate() + 1);
-
-            //currentDate.setMilliseconds((currentDate.getMilliseconds() + (1000*60*60*24)));
-
             currentDate = this.incrementDate(currentDate, 1);
         }
 
-        console.log('Diff: ' + ((endDate - startDate) / 1000 / 60 / 60 / 24));
+        this.renderedEventsMargin += 30;
 
+        console.log('Diff: ' + ((endDate - startDate) / 1000 / 60 / 60 / 24));
     }
 
     // https://stackoverflow.com/a/45408480
