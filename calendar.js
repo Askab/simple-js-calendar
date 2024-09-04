@@ -8,7 +8,7 @@ class Calendar {
     constructor() {
         let date = new Date();
         this.viewedYear = date.getFullYear();
-        this.viewedMonth = date.getMonth() + 1;
+        this.viewedMonth = 10; //date.getMonth() + 1;
         this.events = [];
 
         this.assignEvents();
@@ -195,18 +195,35 @@ class Calendar {
     renderEvents(){
         let testEvents = [
             {
+                id: 1,
                 title: "Event 1",
                 startDate: '2024-10-06',
                 endDate: '2024-11-05',
                 color: "red"
             },
             {
+                id: 2,
+                title: "Event 1.1",
+                startDate: '2024-10-08',
+                endDate: '2024-10-08',
+                color: "grey"
+            },
+            {
+                id: 3,
+                title: "Event 1.2",
+                startDate: '2024-10-10',
+                endDate: '2024-10-10',
+                color: "grey"
+            },
+            {
+                id: 4,
                 title: "Event 2",
                 startDate: '2024-10-07',
                 endDate: '2024-10-10',
                 color: "blue"
             },
             {
+                id: 5,
                 title: "Event 3",
                 startDate: '2024-10-06',
                 endDate: '2024-10-15',
@@ -217,11 +234,30 @@ class Calendar {
         testEvents.forEach((event) => {
             this.renderOneEvent(event);
         });
+
+        console.log(this.eventContainer);
     }
 
     renderedEventsMargin = 1;
 
+    eventContainer = [];
+
+    pendingEvents = {};
+
+    renderedEvents = {};
+
     renderOneEvent(eventObject){
+
+        /**
+         * NOte:
+         * Ha már 3 event ki van iratva, akkor a többi "+N" div alá mehet
+         *  - Ha már van 3,akkor meg kell szakítani a long event vonalat (div-et)
+         * 
+         * Alternatív megoldás:
+         * - 4 egységre felosztani minden nap div-jét (3 event + a "+N" div)
+         * - - - Ha már van benne 3 event div, akkor az "+N"-t növelni
+         */
+
         /**
          * Test
          */
@@ -240,9 +276,11 @@ class Calendar {
 
         while(currentDate <= endDate){
 
+            let formattedCurrentDate = this.formatDate(currentDate);
+
             // Következő hónapra átlógó esemény
             if((currentDate.getMonth() + 1) > this.viewedMonth){
-                let dayDiv = document.querySelector('.day[date="' + this.formatDate(currentDate) + '"]');
+                let dayDiv = document.querySelector('.day[date="' + formattedCurrentDate + '"]');
 
                 if(dayDiv == null){
                     console.log("Another month, it's day is not present: " + currentDate);
@@ -253,7 +291,7 @@ class Calendar {
             // Előző hónapból átlóg a jelenlegi hónapba
             else if((currentDate.getMonth() + 1) < this.viewedMonth){
 
-                let dayDiv = document.querySelector('.day[date="' + this.formatDate(currentDate) + '"]');
+                let dayDiv = document.querySelector('.day[date="' + formattedCurrentDate + '"]');
 
                 if(dayDiv == null){
                     console.log("Another month, it's day is not YET present: " + currentDate);
@@ -268,58 +306,102 @@ class Calendar {
                 currWeekDay = 7;
             }
 
+            // Put the event day in the container
+            if(this.eventContainer[formattedCurrentDate] == undefined){
+                this.eventContainer[formattedCurrentDate] = {
+                    events: {}
+                };
+            }
+
+            if(this.eventContainer[formattedCurrentDate].events[eventObject.id] == undefined){
+
+                this.eventContainer[formattedCurrentDate].events[eventObject.id] = {
+                    title: eventObject.title,
+                    color: eventObject.color
+                };
+            }
+
+            if(this.renderedEvents[formattedCurrentDate] === undefined){
+                this.renderedEvents[formattedCurrentDate] = 0;
+            }
+
             var eventStartDiv;
+
+            if(this.renderedEvents[formattedCurrentDate] < 3){
+
+                /**
+                 * (currWeekDay == 1 && (currentDate.getMonth() + 1) < this.viewedMonth)
+                 * Ha az előző hónapban kezdődik
+                 */
+                if(currWeekDay == 1 || currentDate.getTime() === startDate.getTime() || (currWeekDay == 1 && (currentDate.getMonth() + 1) < this.viewedMonth) || this.pendingEvents[eventObject.id] == true){
+
+                    let dayDiv = document.querySelector('.day[date="' + formattedCurrentDate + '"]');
+    
+                    if(dayDiv !== null){
+    
+                        eventStartDiv = document.createElement("div");
+                        eventStartDiv.classList.add("long-event");
+                        eventStartDiv.textContent = eventObject.title;
+                        eventStartDiv.style.backgroundColor = eventObject.color;
+    
+                        dayDiv.appendChild(eventStartDiv);
+
+                        this.renderedEvents[formattedCurrentDate]++;
+    
+                        let dayDivTopDistance = (dayDiv.getBoundingClientRect().top + 10);
+    
+                        //this.renderedEventsMargin = dayDivTopDistance;
+    
+                        eventStartDiv.style.top = (dayDivTopDistance + this.renderedEventsMargin + 10) + 'px';
+
+                        if(this.pendingEvents[eventObject.id] == true){
+                            delete this.pendingEvents[eventObject.id];
+                        }
+                        
+                    } else {
+                        console.log("Undefined Day div: " + this.formatDate(currentDate));
+                    }
+    
+                    if(currentDate.getTime() !== startDate.getTime()){
+                        isStartWeek = false;
+                    }
+                }
+            } else {
+                // Eltolt event div
+                //let dayDiv = document.querySelector('.day[date="' + this.formatDate(currentDate) + '"]');
+
+                this.pendingEvents[eventObject.id] = true;
+            }
             
-            /**
-             * (currWeekDay == 1 && (currentDate.getMonth() + 1) < this.viewedMonth)
-             * Ha az előző hónapban kezdődik
-             */
-            if(currWeekDay == 1 || currentDate.getTime() === startDate.getTime() || (currWeekDay == 1 && (currentDate.getMonth() + 1) < this.viewedMonth)){
-                let dayDiv = document.querySelector('.day[date="' + this.formatDate(currentDate) + '"]');
-                if(dayDiv !== null){
+            // Event div növelése
+            if(eventStartDiv !== undefined && this.renderedEvents[formattedCurrentDate] < 3){
 
-                    eventStartDiv = document.createElement("div");
-                    eventStartDiv.classList.add("long-event");
-                    eventStartDiv.textContent = eventObject.title;
-                    eventStartDiv.style.backgroundColor = eventObject.color;
+                console.log(eventStartDiv);
 
-                    dayDiv.appendChild(eventStartDiv);
+                this.renderedEvents[formattedCurrentDate]++;
 
-                    let dayDivTopDistance = (dayDiv.getBoundingClientRect().top + 10);
+                if(isStartWeek == true){
 
-                    //this.renderedEventsMargin = dayDivTopDistance;
-
-                    eventStartDiv.style.top = (dayDivTopDistance + this.renderedEventsMargin + 10) + 'px';
+                    // HA a kezdő dátum, és a vég dátum ugyan azon a héten van
+                    let startEndDiffInDays = ((endDate - startDate) / 1000 / 60 / 60 / 24) + 1;
+                    let startDayOfWeek = startDate.getDay();
+                    startDayOfWeek = (startDayOfWeek == 0 ? 7 : startDayOfWeek);
+    
+                    if(startEndDiffInDays <= 7 && startDate.getWeek() == endDate.getWeek()){
+    
+                        console.log("7 < DIff: " + startEndDiffInDays);
+                        eventStartDiv.style.width = (14 * startEndDiffInDays) + '%';
+                    } else {
+                        // A 8 azért kell, mert 7-ből vonna ki,ami vasárnap esetében 0 lenne
+                        eventStartDiv.style.width = (14 * (8 - startDayOfWeek)) + '%';
+                    }
+                    
                     
                 } else {
-                    console.log("Undefined Day div: " + this.formatDate(currentDate));
-                }
-
-                if(currentDate.getTime() !== startDate.getTime()){
-                    isStartWeek = false;
+                    eventStartDiv.style.width = (14 * currWeekDay) + '%';
                 }
             }
-
-            if(isStartWeek == true){
-
-                // HA a kezdő dátum, és a vég dátum ugyan azon a héten van
-                let startEndDiffInDays = ((endDate - startDate) / 1000 / 60 / 60 / 24) + 1;
-                let startDayOfWeek = startDate.getDay();
-                startDayOfWeek = (startDayOfWeek == 0 ? 7 : startDayOfWeek);
-
-                if(startEndDiffInDays <= 7 && startDate.getWeek() == endDate.getWeek()){
-
-                    console.log("7 < DIff: " + startEndDiffInDays);
-                    eventStartDiv.style.width = (14 * startEndDiffInDays) + '%';
-                } else {
-                    // A 8 azért kell, mert 7-ből vonna ki,ami vasárnap esetében 0 lenne
-                    eventStartDiv.style.width = (14 * (8 - startDayOfWeek)) + '%';
-                }
-                
-                
-            } else {
-                eventStartDiv.style.width = (14 * currWeekDay) + '%';
-            }
+            
 
             if(currWeekDay == 7){
                 currWeekDay = 1;
@@ -329,9 +411,11 @@ class Calendar {
             }
 
             currentDate = this.incrementDate(currentDate, 1);
+
+            console.log("Rendered for this day( " + formattedCurrentDate + " ):" + this.renderedEvents[formattedCurrentDate]);
         }
 
-        this.renderedEventsMargin += 30;
+        this.renderedEventsMargin += 15;
 
         console.log('Diff: ' + ((endDate - startDate) / 1000 / 60 / 60 / 24));
     }
