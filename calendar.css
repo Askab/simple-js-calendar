@@ -29,6 +29,7 @@
 
 .day, .weekday {
     display: flex;
+    flex-direction: column;
     border: 1px solid;
     width: 14.3%;
 }
@@ -46,11 +47,9 @@
     background-color: #cfcfcf;
 }
 
-.long-event {
-    height: 20px;
-    background-color: blue;
-    color: white;
-    position: absolute;
-    width: 14%;
-    /*width: 530px; Automatikusan kell számolódna*/
+.event {
+    height: 18px;
+    width: 120%;
+    top: 5px;
+    position: relative;
 }

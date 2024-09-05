@@ -164,6 +164,9 @@ class Calendar {
     }
 
     render() {
+
+        this.renderedEvents = {};
+
         /** Header */
         document.querySelector(".weekdays").innerHTML = "";
 
@@ -218,7 +221,7 @@ class Calendar {
             {
                 id: 4,
                 title: "Event 2",
-                startDate: '2024-10-07',
+                startDate: '2024-10-08',
                 endDate: '2024-10-10',
                 color: "blue"
             },
@@ -231,7 +234,22 @@ class Calendar {
             },
         ];
 
-        testEvents.forEach((event) => {
+        // Rendezés, hogy a hoszabb események legyenek felül
+        let sortedEvents = testEvents.sort((a, b) => {
+
+            let diffA = (new Date(a.endDate) - new Date(a.startDate));
+            let diffB = (new Date(b.endDate) - new Date(b.startDate));
+
+            if (diffA > diffB) {
+                return -1;
+            }
+            if (diffA < diffB) {
+                return 1;
+            }
+            return 0;
+        });
+
+        sortedEvents.forEach((event) => {
             this.renderOneEvent(event);
         });
 
@@ -261,26 +279,24 @@ class Calendar {
         /**
          * Test
          */
-        let startDateString = eventObject.startDate;
-        let endDateString = eventObject.endDate;
+        let startDate = new Date(eventObject.startDate);
+        let endDate = new Date(eventObject.endDate);
+        let currentDate = new Date(eventObject.startDate);
+        let currWeekDay = currentDate.getDay();
 
-        let startDate = new Date(startDateString);
-        let endDate = new Date(endDateString);
-        let currentDate = new Date(startDateString);
+        let endDateFormatted = this.formatDate(endDate);
 
         console.log("START: " + startDate.toLocaleDateString());
         console.log("END: " + endDate.toLocaleDateString());
-
-        let currWeekDay = currentDate.getDay();
-        let isStartWeek = true;
 
         while(currentDate <= endDate){
 
             let formattedCurrentDate = this.formatDate(currentDate);
 
+            let dayDiv = document.querySelector('.day[date="' + formattedCurrentDate + '"]');
+
             // Következő hónapra átlógó esemény
             if((currentDate.getMonth() + 1) > this.viewedMonth){
-                let dayDiv = document.querySelector('.day[date="' + formattedCurrentDate + '"]');
 
                 if(dayDiv == null){
                     console.log("Another month, it's day is not present: " + currentDate);
@@ -290,8 +306,6 @@ class Calendar {
             } 
             // Előző hónapból átlóg a jelenlegi hónapba
             else if((currentDate.getMonth() + 1) < this.viewedMonth){
-
-                let dayDiv = document.querySelector('.day[date="' + formattedCurrentDate + '"]');
 
                 if(dayDiv == null){
                     console.log("Another month, it's day is not YET present: " + currentDate);
@@ -306,116 +320,35 @@ class Calendar {
                 currWeekDay = 7;
             }
 
-            // Put the event day in the container
-            if(this.eventContainer[formattedCurrentDate] == undefined){
-                this.eventContainer[formattedCurrentDate] = {
-                    events: {}
-                };
-            }
+            /**
+             * Insert the event div
+             */
+            if(dayDiv !== null){
 
-            if(this.eventContainer[formattedCurrentDate].events[eventObject.id] == undefined){
+                var eventDiv = document.createElement("div");
+                eventDiv.classList.add("event");
+                eventDiv.style.backgroundColor = eventObject.color;
 
-                this.eventContainer[formattedCurrentDate].events[eventObject.id] = {
-                    title: eventObject.title,
-                    color: eventObject.color
-                };
-            }
-
-            if(this.renderedEvents[formattedCurrentDate] === undefined){
-                this.renderedEvents[formattedCurrentDate] = 0;
-            }
-
-            var eventStartDiv;
-
-            if(this.renderedEvents[formattedCurrentDate] < 3){
-
-                /**
-                 * (currWeekDay == 1 && (currentDate.getMonth() + 1) < this.viewedMonth)
-                 * Ha az előző hónapban kezdődik
-                 */
-                if(currWeekDay == 1 || currentDate.getTime() === startDate.getTime() || (currWeekDay == 1 && (currentDate.getMonth() + 1) < this.viewedMonth) || this.pendingEvents[eventObject.id] == true){
-
-                    let dayDiv = document.querySelector('.day[date="' + formattedCurrentDate + '"]');
-    
-                    if(dayDiv !== null){
-    
-                        eventStartDiv = document.createElement("div");
-                        eventStartDiv.classList.add("long-event");
-                        eventStartDiv.textContent = eventObject.title;
-                        eventStartDiv.style.backgroundColor = eventObject.color;
-    
-                        dayDiv.appendChild(eventStartDiv);
-
-                        this.renderedEvents[formattedCurrentDate]++;
-    
-                        let dayDivTopDistance = (dayDiv.getBoundingClientRect().top + 10);
-    
-                        //this.renderedEventsMargin = dayDivTopDistance;
-    
-                        eventStartDiv.style.top = (dayDivTopDistance + this.renderedEventsMargin + 10) + 'px';
-
-                        if(this.pendingEvents[eventObject.id] == true){
-                            delete this.pendingEvents[eventObject.id];
-                        }
-                        
-                    } else {
-                        console.log("Undefined Day div: " + this.formatDate(currentDate));
-                    }
-    
-                    if(currentDate.getTime() !== startDate.getTime()){
-                        isStartWeek = false;
-                    }
+                if(this.renderedEvents[eventObject.id] === undefined || currWeekDay == 1){
+                    eventDiv.textContent = eventObject.title;
                 }
-            } else {
-                // Eltolt event div
-                //let dayDiv = document.querySelector('.day[date="' + this.formatDate(currentDate) + '"]');
 
-                this.pendingEvents[eventObject.id] = true;
-            }
-            
-            // Event div növelése
-            if(eventStartDiv !== undefined && this.renderedEvents[formattedCurrentDate] < 3){
-
-                console.log(eventStartDiv);
-
-                this.renderedEvents[formattedCurrentDate]++;
-
-                if(isStartWeek == true){
-
-                    // HA a kezdő dátum, és a vég dátum ugyan azon a héten van
-                    let startEndDiffInDays = ((endDate - startDate) / 1000 / 60 / 60 / 24) + 1;
-                    let startDayOfWeek = startDate.getDay();
-                    startDayOfWeek = (startDayOfWeek == 0 ? 7 : startDayOfWeek);
-    
-                    if(startEndDiffInDays <= 7 && startDate.getWeek() == endDate.getWeek()){
-    
-                        console.log("7 < DIff: " + startEndDiffInDays);
-                        eventStartDiv.style.width = (14 * startEndDiffInDays) + '%';
-                    } else {
-                        // A 8 azért kell, mert 7-ből vonna ki,ami vasárnap esetében 0 lenne
-                        eventStartDiv.style.width = (14 * (8 - startDayOfWeek)) + '%';
-                    }
-                    
-                    
-                } else {
-                    eventStartDiv.style.width = (14 * currWeekDay) + '%';
+                if(formattedCurrentDate == endDateFormatted || currWeekDay == 7){
+                    console.log("Is this the last day? -> " + (this.incrementDate(currentDate, 1) == endDate));
+                    eventDiv.style.width = "100%";
                 }
-            }
-            
 
-            if(currWeekDay == 7){
-                currWeekDay = 1;
-                //eventStartDiv.style.width = (14 * (1 + currWeekDay)) + '%';
-            } else {
-                currWeekDay++;
+                this.renderedEvents[eventObject.id] = true;
+                
+                dayDiv.appendChild(eventDiv);
             }
 
             currentDate = this.incrementDate(currentDate, 1);
 
-            console.log("Rendered for this day( " + formattedCurrentDate + " ):" + this.renderedEvents[formattedCurrentDate]);
-        }
+            currWeekDay = currWeekDay == 7 ? 1 : currWeekDay + 1;
 
-        this.renderedEventsMargin += 15;
+            //console.log("Rendered for this day( " + formattedCurrentDate + " ):" + this.renderedEvents[formattedCurrentDate]);
+        }
 
         console.log('Diff: ' + ((endDate - startDate) / 1000 / 60 / 60 / 24));
     }
@@ -478,12 +411,7 @@ class Calendar {
             month = '' + (d.getMonth() + 1),
             day = '' + d.getDate(),
             year = d.getFullYear();
-    
-        /*if (month.length < 2) 
-            month = '0' + month;
-        if (day.length < 2) 
-            day = '0' + day;*/
-    
+
         return [year, month, day].join('-');
     }
 }
