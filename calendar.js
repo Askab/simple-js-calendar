@@ -69,6 +69,27 @@ class Calendar {
                 this.stepForward();
             });
         }
+
+        /*
+        * Napra kattintás
+        */
+       /*let dayButtons = document.querySelectorAll('.day');
+
+       if(dayButtons){
+
+         dayButtons.forEach((dayButton) => {
+
+            dayButton.addEventListener('click', (event) => {
+                let clickedDay = event.target;
+                
+                console.log("Day data" + clickedDay.getAttribute('date'));
+    
+                console.log(`Clicked day: ${clickedDay}`);
+             });
+
+         });
+         
+       }*/
     }
 
     stepForward(){
@@ -199,35 +220,35 @@ class Calendar {
         let testEvents = [
             {
                 id: 1,
-                title: "Event 1",
+                name: "Event 1",
                 startDate: '2024-10-06',
                 endDate: '2024-11-05',
                 color: "red"
             },
             {
                 id: 2,
-                title: "Event 1.1",
+                name: "Event 1.1",
                 startDate: '2024-10-08',
                 endDate: '2024-10-08',
                 color: "grey"
             },
             {
                 id: 3,
-                title: "Event 1.2",
+                name: "Event 1.2",
                 startDate: '2024-10-10',
                 endDate: '2024-10-10',
                 color: "grey"
             },
             {
                 id: 4,
-                title: "Event 2",
+                name: "Event 2",
                 startDate: '2024-10-08',
                 endDate: '2024-10-10',
                 color: "blue"
             },
             {
                 id: 5,
-                title: "Event 3",
+                name: "Event 3",
                 startDate: '2024-10-06',
                 endDate: '2024-10-15',
                 color: "green"
@@ -253,7 +274,8 @@ class Calendar {
             this.renderOneEvent(event);
         });
 
-        console.log(this.eventContainer);
+        //console.log(this.eventContainer);
+        console.log(this.dayEvents);
     }
 
     renderedEventsMargin = 1;
@@ -264,21 +286,10 @@ class Calendar {
 
     renderedEvents = {};
 
+    dayEvents = {};
+
     renderOneEvent(eventObject){
 
-        /**
-         * NOte:
-         * Ha már 3 event ki van iratva, akkor a többi "+N" div alá mehet
-         *  - Ha már van 3,akkor meg kell szakítani a long event vonalat (div-et)
-         * 
-         * Alternatív megoldás:
-         * - 4 egységre felosztani minden nap div-jét (3 event + a "+N" div)
-         * - - - Ha már van benne 3 event div, akkor az "+N"-t növelni
-         */
-
-        /**
-         * Test
-         */
         let startDate = new Date(eventObject.startDate);
         let endDate = new Date(eventObject.endDate);
         let currentDate = new Date(eventObject.startDate);
@@ -330,24 +341,27 @@ class Calendar {
                 eventDiv.style.backgroundColor = eventObject.color;
 
                 if(this.renderedEvents[eventObject.id] === undefined || currWeekDay == 1){
-                    eventDiv.textContent = eventObject.title;
+                    eventDiv.textContent = eventObject.name;
                 }
 
                 if(formattedCurrentDate == endDateFormatted || currWeekDay == 7){
-                    console.log("Is this the last day? -> " + (this.incrementDate(currentDate, 1) == endDate));
                     eventDiv.style.width = "100%";
                 }
 
+                if(this.dayEvents[formattedCurrentDate] == undefined){
+                    this.dayEvents[formattedCurrentDate] = [];
+                }
+
+                this.dayEvents[formattedCurrentDate].push(eventObject);
+
                 this.renderedEvents[eventObject.id] = true;
-                
+
                 dayDiv.appendChild(eventDiv);
             }
 
             currentDate = this.incrementDate(currentDate, 1);
 
             currWeekDay = currWeekDay == 7 ? 1 : currWeekDay + 1;
-
-            //console.log("Rendered for this day( " + formattedCurrentDate + " ):" + this.renderedEvents[formattedCurrentDate]);
         }
 
         console.log('Diff: ' + ((endDate - startDate) / 1000 / 60 / 60 / 24));
@@ -367,6 +381,7 @@ class Calendar {
         if(contentObject){
 
             contentObject.innerHTML = "";
+            this.dayEvents = [];
 
             let calendarData = this.monthlyView();
 
@@ -386,9 +401,54 @@ class Calendar {
 
                     dayCell.textContent = day.day;
 
-                    weekRow.appendChild(dayCell);
+                    /**
+                     * Click event
+                     */
+                    dayCell.onclick = (event) => {
+                        let clickedDayElement = event.currentTarget;
+                        let currentDateAttr = clickedDayElement.getAttribute('date');
 
-                    //console.log(`Day: ${day.day}, Type: ${day.type}, Events: ${day.events.length}`);
+                        // title
+                        var titleElement = document.querySelector('#event-container-header h3');
+                        titleElement.textContent = `Események - ${currentDateAttr}`;
+
+                        let listedEventsSubCont = document.querySelector('#event-subcontainer');
+                        listedEventsSubCont.innerHTML = "";
+
+                        if(this.dayEvents[currentDateAttr] !== undefined && listedEventsSubCont){
+
+                            let clickedDayEvents = this.dayEvents[currentDateAttr];
+
+                            clickedDayEvents.forEach(dayEvent => {
+
+                                var listedEventElement = document.createElement("div");
+                                listedEventElement.classList.add("listed-event-container");
+                                listedEventElement.style.backgroundColor = dayEvent.color;
+
+                                // title
+                                var titleElement = document.createElement("h5");
+                                titleElement.classList.add("listed-event-title");
+                                titleElement.textContent = dayEvent.name;
+
+                                listedEventElement.appendChild(titleElement);
+
+                                // dates
+                                var datesElement = document.createElement("p");
+                                datesElement.classList.add("listed-event-dates");
+                                datesElement.textContent = `${this.formatDate(new Date(dayEvent.startDate))} - ${this.formatDate(new Date(dayEvent.endDate))}`;
+
+                                listedEventElement.appendChild(datesElement);
+
+                                listedEventsSubCont.appendChild(listedEventElement);
+
+                                console.log(`Clicked event: ${dayEvent.name}`);
+                            });
+                            
+                            
+                        }
+                    };
+
+                    weekRow.appendChild(dayCell);
                 });
 
                 document.querySelector(".calendar-content").appendChild(weekRow);
